@@ -2,14 +2,21 @@ using System.Windows.Forms;
 
 namespace tic_tac_toe
 {
+
+
     public partial class Form1 : Form
     {
-        string JugadorX = ""; 
-        string JugadorO = "";
-        string[,] tablero = new string[3, 3];
-        string TurnoActual = "x";
+        string JugadorX = "";
+        char[,] tablero = {{ '_', '_', '_' },
+                     { '_', '_', '_' },
+                     { '_', '_', '_' }};
         bool isplaying = false;
-        int empate = 0; 
+        int empate = 0;
+
+        static char player = 'x', opponent = 'o';
+
+
+
         public Form1()
         {
 
@@ -46,58 +53,24 @@ namespace tic_tac_toe
 
         private void Ingresar()
         {
-            if (txtuserazul.Text == "" && txtuserrojo.Text == "")
+            if (txtuserazul.Text == "")
             {
                 MessageBox.Show("el nombre no debe estar vacio ");
+                return;
             }
             else
             {
-                if (txtuserazul.Text == "")
-                    MessageBox.Show("el nombre del jugador azul no debe estar vacio ");
+                JugadorX = txtuserazul.Text;
+                PlayGame();
             }
-            {
-                if (txtuserrojo.Text == "")
-                    MessageBox.Show("el nombre del jugador rojo no debe estar vacio ");
-            }
-            if (txtuserazul.Text != "" && txtuserrojo.Text != "")
-            {
-                if (xazul.Checked && orojo.Checked)
-                {
-                    JugadorX = txtuserazul.Text;
-                    JugadorO = txtuserrojo.Text;
-                    oazul.Enabled = false;
-                    xrojo.Enabled = false;
-                    PlayGame();
-                }
-                if (oazul.Checked && xrojo.Checked)
-                {
-                    JugadorX = txtuserrojo.Text;
-                    JugadorO = txtuserazul.Text;
-                    xazul.Enabled = false;
-                    orojo.Enabled = false;
-                    PlayGame();
-                }
-                if (xazul.Checked && xrojo.Checked)
-                {
-                    MessageBox.Show("solo un jugador puede seleccionar la letra X ");
-                }
-                if (oazul.Checked && orojo.Checked)
-                {
-                    MessageBox.Show("solo un jugador puede seleccionar la letra O ");
-                }
 
-                if (xazul.Checked == false && oazul.Checked == false || xrojo.Checked == false && orojo.Checked == false)
-                {
-                    MessageBox.Show("solo puedes seleccionar una letra ");
-                }
-            }
+
         }
 
         private void PlayGame()
         {
             isplaying = true;
             lbluserazul.Text = txtuserazul.Text;
-            lbluserrojo.Text = txtuserrojo.Text;
 
             groupBox1.Text = "Marcador";
 
@@ -106,123 +79,342 @@ namespace tic_tac_toe
             btnreiniciar.Visible = true;
             btniniciar.Visible = false;
             txtuserazul.Visible = false;
-            txtuserrojo.Visible = false;
             MessageBox.Show("EMPIEZA el " + JugadorX);
             OnOffBtn(true);
         }
 
 
 
-        private void marcar(int row, int column, string caract)
+
+        static Boolean isMovesLeft(char[,] board)
+        {
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    if (board[i, j] == '_')
+                        return true;
+            return false;
+        }
+
+
+        static int evaluate(char[,] b)
+        {
+            // Checking for Rows for X or O victory. 
+            for (int row = 0; row < 3; row++)
+            {
+                if (b[row, 0] == b[row, 1] &&
+                    b[row, 1] == b[row, 2])
+                {
+                    if (b[row, 0] == player)
+                        return +10;
+                    else if (b[row, 0] == opponent)
+                        return -10;
+                }
+            }
+
+            // Checking for Columns for X or O victory. 
+            for (int col = 0; col < 3; col++)
+            {
+                if (b[0, col] == b[1, col] &&
+                    b[1, col] == b[2, col])
+                {
+                    if (b[0, col] == player)
+                        return +10;
+
+                    else if (b[0, col] == opponent)
+                        return -10;
+                }
+            }
+
+            // Checking for Diagonals for X or O victory. 
+            if (b[0, 0] == b[1, 1] && b[1, 1] == b[2, 2])
+            {
+                if (b[0, 0] == player)
+                    return +10;
+                else if (b[0, 0] == opponent)
+                    return -10;
+            }
+
+            if (b[0, 2] == b[1, 1] && b[1, 1] == b[2, 0])
+            {
+                if (b[0, 2] == player)
+                    return +10;
+                else if (b[0, 2] == opponent)
+                    return -10;
+            }
+
+            // Else if none of them have won then return 0 
+            return 0;
+        }
+
+
+        static int minimax(char[,] board,
+                    int depth, Boolean isMax)
+        {
+            int score = evaluate(board);
+
+            // If Maximizer has won the game  
+            // return his/her evaluated score 
+            if (score == 10)
+                return score;
+
+            // If Minimizer has won the game  
+            // return his/her evaluated score 
+            if (score == -10)
+                return score;
+
+            // If there are no more moves and  
+            // no winner then it is a tie 
+            if (isMovesLeft(board) == false)
+                return 0;
+
+            // If this maximizer's move 
+            if (isMax)
+            {
+                int best = -1000;
+
+                // Traverse all cells 
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        // Check if cell is empty 
+                        if (board[i, j] == '_')
+                        {
+                            // Make the move 
+                            board[i, j] = player;
+
+                            // Call minimax recursively and choose 
+                            // the maximum value 
+                            best = Math.Max(best, minimax(board,
+                                            depth + 1, !isMax));
+
+                            // Undo the move 
+                            board[i, j] = '_';
+                        }
+                    }
+                }
+                return best;
+            }
+
+            // If this minimizer's move 
+            else
+            {
+                int best = 1000;
+
+                // Traverse all cells 
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        // Check if cell is empty 
+                        if (board[i, j] == '_')
+                        {
+                            // Make the move 
+                            board[i, j] = opponent;
+
+                            // Call minimax recursively and choose 
+                            // the minimum value 
+                            best = Math.Min(best, minimax(board,
+                                            depth + 1, !isMax));
+
+                            // Undo the move 
+                            board[i, j] = '_';
+                        }
+                    }
+                }
+                return best;
+            }
+        }
+
+        static Move findBestMove(char[,] board)
+        {
+            int bestVal = -1000;
+            Move bestMove = new Move();
+            bestMove.row = -1;
+            bestMove.col = -1;
+
+
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (board[i, j] == '_')
+                    {
+                        board[i, j] = player;
+
+
+                        int moveVal = minimax(board, 0, false);
+
+                        board[i, j] = '_';
+
+
+                        if (moveVal > bestVal)
+                        {
+                            bestMove.row = i;
+                            bestMove.col = j;
+                            bestVal = moveVal;
+                        }
+                    }
+                }
+            }
+
+
+
+            return bestMove;
+        }
+
+
+        private void marcar(int row, int column, char caract)
         {
             tablero[row, column] = caract;
             ganador();
+            TurnoCPU();
+            ganador();
+
+
 
         }
         private void ganador()
         {
-            if (tablero[0, 0] == "x" && tablero[0, 1] == "x" && tablero[0, 2] == "x")
+
+            if (!isplaying)
+            {
+                return;
+            }
+
+
+            //check horizontal
+            for (int i = 0; i < 3; i++)
+            {
+                if (tablero[i, 0] == 'x' && tablero[i, 1] == 'x' && tablero[i, 2] == 'x')
+                {
+                    MessageBox.Show("ganador x");
+                    isplaying = false;
+                }
+                else if (tablero[i, 0] == 'o' && tablero[i, 1] == 'o' && tablero[i, 2] == 'o')
+                {
+                    MessageBox.Show("ganador o");
+                    isplaying = false;
+                }
+            }
+
+            //check vertical
+            for (int j = 0; j < 3; j++)
+            {
+                if (tablero[0, j] == 'x' && tablero[1, j] == 'x' && tablero[2, j] == 'x')
+                {
+                    MessageBox.Show("ganador x");
+                    isplaying = false;
+                }
+                else if (tablero[0, j] == 'o' && tablero[1, j] == 'o' && tablero[2, j] == 'o')
+                {
+                    MessageBox.Show("ganador o");
+                    isplaying = false;
+                }
+            }
+
+            //check diagonal
+            if (tablero[0, 0] == 'x' && tablero[1, 1] == 'x' && tablero[2, 2] == 'x')
             {
                 MessageBox.Show("ganador x");
+                isplaying = false;
+            }
+            else if (tablero[0, 0] == 'o' && tablero[1, 1] == 'o' && tablero[2, 2] == 'o')
+            {
+                MessageBox.Show("ganador o");
+                isplaying = false;
+            }
+            else if (tablero[0, 2] == 'x' && tablero[1, 1] == 'x' && tablero[2, 0] == 'x')
+            {
+                MessageBox.Show("ganador x");
+                isplaying = false;
+            }
+            else if (tablero[0, 2] == 'o' && tablero[1, 1] == 'o' && tablero[2, 0] == 'o')
+            {
+                MessageBox.Show("ganador o");
                 isplaying = false;
             }
 
-            else if (tablero[1, 0] == "x" && tablero[1, 1] == "x" && tablero[1, 2] == "x")
+
+
+            for (int i = 0; i < 3; i++)
             {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "x" && tablero[2, 1] == "x" && tablero[2, 2] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[0, 0] == "x" && tablero[1, 0] == "x" && tablero[2, 0] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[1, 0] == "x" && tablero[1, 1] == "x" && tablero[2, 1] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "x" && tablero[2, 1] == "x" && tablero[2, 2] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[0, 0] == "x" && tablero[1, 1] == "x" && tablero[2, 2] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "x" && tablero[1, 1] == "x" && tablero[0, 2] == "x")
-            {
-                MessageBox.Show("ganador x");
-                isplaying = false;
+                for (int j = 0; j < 3; j++)
+                {
+                    if (tablero[i, j] != '_')
+                    {
+                        empate++;
+                    }
+                }
             }
 
-            //separacion de X  a O
-            if (tablero[0, 0] == "o" && tablero[0, 1] == "o" && tablero[0, 2] == "o")
+            if (empate == 9)
             {
-                MessageBox.Show("ganador o" );
-                isplaying = false;
-            }
-
-            else if (tablero[1, 0] == "o" && tablero[1, 1] == "o" && tablero[1, 2] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "o" && tablero[2, 1] == "o" && tablero[2, 2] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-            }
-            else if (tablero[0, 0] == "o" && tablero[1, 0] == "o" && tablero[2, 0] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-            }
-            else if (tablero[1, 0] == "o" && tablero[1, 1] == "o" && tablero[2, 1] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "o" && tablero[2, 1] == "o" && tablero[2, 2] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-            }
-            else if (tablero[0, 0] == "o" && tablero[1, 1] == "o" && tablero[2, 2] == "o")
-            {
-                MessageBox.Show("ganador ");
-                isplaying = false;
-            }
-            else if (tablero[2, 0] == "o" && tablero[1, 1] == "o" && tablero[0, 2] == "o")
-            {
-                MessageBox.Show("ganador o");
-                isplaying = false;
-
-            }
-
-            empate++;
-            if (empate == 9) {
                 MessageBox.Show("empate");
-                limpiar();
-                OnOffBtn(true);
-
-                empate = 0;  
-            
+                isplaying = false;
             }
         }
-      
+
+        private void TurnoCPU()
+        {
+            if (isplaying)
+            {
+                Move bestMove = findBestMove(tablero);
+                tablero[bestMove.row, bestMove.col] = 'o';
+                if (bestMove.row == 0 && bestMove.col == 0)
+                {
+                    a1.Text = "o";
+                    a1.Enabled = false;
+                }
+                else if (bestMove.row == 0 && bestMove.col == 1)
+                {
+                    a2.Text = "o";
+                    a2.Enabled = false;
+                }
+                else if (bestMove.row == 0 && bestMove.col == 2)
+                {
+                    a3.Text = "o";
+                    a3.Enabled = false;
+                }
+                else if (bestMove.row == 1 && bestMove.col == 0)
+                {
+                    b1.Text = "o";
+                    b1.Enabled = false;
+                }
+                else if (bestMove.row == 1 && bestMove.col == 1)
+                {
+                    b2.Text = "o";
+                    b2.Enabled = false;
+                }
+                else if (bestMove.row == 1 && bestMove.col == 2)
+                {
+                    b3.Text = "o";
+                    b3.Enabled = false;
+                }
+                else if (bestMove.row == 2 && bestMove.col == 0)
+                {
+                    c1.Text = "o";
+                    c1.Enabled = false;
+                }
+                else if (bestMove.row == 2 && bestMove.col == 1)
+                {
+                    c2.Text = "o";
+                    c2.Enabled = false;
+                }
+                else if (bestMove.row == 2 && bestMove.col == 2)
+                {
+                    c3.Text = "o";
+                    c3.Enabled = false;
+                }
+            }
+
+        }
+
 
 
         private void limpiar()
         {
-            
+
             a1.Text = "";
             a2.Text = "";
             a3.Text = "";
@@ -232,26 +424,25 @@ namespace tic_tac_toe
             c1.Text = "";
             c2.Text = "";
             c3.Text = "";
-             
+
+            //limpiar tablero
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    tablero[i, j] = '_';
+                }
+            }
+
         }
 
         private void a1_Click(object sender, EventArgs e)
         {
             if (isplaying)
             {
-                a1.Text = TurnoActual;
+                a1.Text = "x";
                 a1.Enabled = false;
-                marcar(0, 0, TurnoActual);
-
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
-
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
+                marcar(0, 0, 'x');
 
 
 
@@ -269,19 +460,11 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                a2.Text = TurnoActual;
+                a2.Text = "x";
                 a2.Enabled = false;
-                marcar(0, 1, TurnoActual);
+                marcar(0, 1, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
 
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -289,19 +472,10 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                a3.Text = TurnoActual;
+                a3.Text = "x";
                 a3.Enabled = false;
-                marcar(0, 2, TurnoActual);
+                marcar(0, 2, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
-
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -309,19 +483,10 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                b1.Text = TurnoActual;
+                b1.Text = "x";
                 b1.Enabled = false;
-                marcar(1, 0, TurnoActual);
+                marcar(1, 0, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
-
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
 
         }
@@ -330,19 +495,11 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                b2.Text = TurnoActual;
+                b2.Text = "x";
                 b2.Enabled = false;
-                marcar(1, 1, TurnoActual);
+                marcar(1, 1, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
 
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -350,19 +507,11 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                b3.Text = TurnoActual;
+                b3.Text = "x";
                 b3.Enabled = false;
-                marcar(1, 2, TurnoActual);
+                marcar(1, 2, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
 
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -370,19 +519,10 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                c1.Text = TurnoActual;
+                c1.Text = "x";
                 c1.Enabled = false;
-                marcar(2, 0, TurnoActual);
+                marcar(2, 0, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
-
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -390,20 +530,11 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                c2.Text = TurnoActual;
+                c2.Text = "x";
                 c2.Enabled = false;
 
-                marcar(2, 1, TurnoActual);
+                marcar(2, 1, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
-
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -411,20 +542,12 @@ namespace tic_tac_toe
         {
             if (isplaying)
             {
-                c3.Text = TurnoActual;
+                c3.Text = "x";
                 c3.Enabled = false;
 
-                marcar(2, 2, TurnoActual);
+                marcar(2, 2, 'x');
 
-                if (TurnoActual == "x")
-                {
-                    TurnoActual = "o";
 
-                }
-                else
-                {
-                    TurnoActual = "x";
-                }
             }
         }
 
@@ -439,34 +562,26 @@ namespace tic_tac_toe
         private void btnreiniciar_Click(object sender, EventArgs e)
         {
             limpiar();
-            
+
             btnlimpiar.Visible = false;
             btnreiniciar.Visible = false;
 
             btniniciar.Visible = true;
 
-            txtuserrojo.Visible = true;
-           txtuserazul.Visible = true;
+            txtuserazul.Visible = true;
             JugadorX = "";
-            JugadorO = "";
-            
-         
+
+
+
 
             lbluserazul.Text = "";
             lbluserrojo.Text = "";
 
-            oazul.Enabled = true;
-            xrojo.Enabled = true;
-            xazul.Enabled = true;
-            orojo.Enabled = true;
-            OnOffBtn(true); 
-            xazul.Checked= false;
-            oazul.Checked = false;
-            xrojo.Checked = false;
-            orojo.Checked = false;
-          
+
+            OnOffBtn(true);
+
             groupBox1.Text = "introduzca los nombres del os jugadores";
-        
+
         }
 
         private void groupBox1_Enter(object sender, EventArgs e)
@@ -478,5 +593,20 @@ namespace tic_tac_toe
         {
 
         }
+
+        private void lbluserrojo_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lbluserazul_Click(object sender, EventArgs e)
+        {
+
+        }
     }
+    class Move
+    {
+        public int row, col;
+    };
+
 }
